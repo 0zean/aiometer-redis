@@ -11,9 +11,7 @@ def collapse_excgroups() -> Generator[None, None, None]:
     try:
         yield
     except BaseException as exc:
-        while (
-            isinstance(exc, BaseExceptionGroup) and len(exc.exceptions) == 1
-        ):  # pragma: nopy38
+        while isinstance(exc, BaseExceptionGroup) and len(exc.exceptions) == 1:  # pragma: nopy38
             exc = exc.exceptions[0]
 
         raise exc
