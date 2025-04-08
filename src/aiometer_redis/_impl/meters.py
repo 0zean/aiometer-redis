@@ -40,7 +40,7 @@ class HardLimitMeter(Meter):
             if self.redis_url:
                 await self._connect()
                 while True:
-                    active_tasks = await self.redis.get(self.key, encoding="utf-8")
+                    active_tasks = await self.redis.get(self.key)
                     active_tasks = int(active_tasks or 0)
                     if active_tasks < self.max_at_once:
                         break
@@ -102,7 +102,7 @@ class RateLimitMeter(Meter):
                 await self._connect()
                 while True:
                     now = int(anyio.current_time() * 1000)  # Current time in ms
-                    tat = await self.redis.get(self.key, encoding="utf-8")
+                    tat = await self.redis.get(self.key)
                     tat = int(tat or 0)  # Default to 0 if no TAT is set
                     if now >= tat:
                         break
@@ -122,7 +122,7 @@ class RateLimitMeter(Meter):
             if self.redis_url:
                 await self._connect()
                 now = int(anyio.current_time() * 1000)  # Current time in ms
-                tat = await self.redis.get(self.key, encoding="utf-8")
+                tat = await self.redis.get(self.key)
                 tat = int(tat or 0)  # Default to 0 if no TAT is set
                 new_tat = max(tat, now) + int(self.task_delta * 1000)  # Update TAT
                 await self.redis.set(self.key, new_tat)
