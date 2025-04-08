@@ -1,6 +1,7 @@
 from typing import Awaitable, Callable, Dict, List, Optional, Sequence
 
 from .amap import amap
+from .meters import RedisMeter
 from .types import T
 from .utils import check_no_lambdas, list_from_indexed_dict
 
@@ -10,6 +11,7 @@ async def run_all(
     *,
     max_at_once: Optional[int] = None,
     max_per_second: Optional[float] = None,
+    redis_meter: Optional[RedisMeter] = None,
 ) -> List[T]:
     check_no_lambdas(async_fns, entrypoint="aiometer.run_all")
 
@@ -20,6 +22,7 @@ async def run_all(
         async_fns,
         max_at_once=max_at_once,
         max_per_second=max_per_second,
+        redis_meter=redis_meter,
         _include_index=True,
     ) as amap_results:
         async for index, result in amap_results:
