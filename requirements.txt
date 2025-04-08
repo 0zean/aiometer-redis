@@ -17,3 +17,4 @@ mypy==0.991
 pytest==7.*
 pytest-cov
 trio==0.*
+redis==5.2.1
