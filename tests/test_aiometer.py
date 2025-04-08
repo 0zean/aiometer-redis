@@ -5,7 +5,7 @@ from typing import Any, Callable, Iterator, List
 import anyio
 import pytest
 
-import aiometer
+import aiometer_redis
 
 from ._utils import pairwise
 
@@ -19,7 +19,7 @@ class TestRunners:
             output.add(item)
 
         items = ["apple", "banana", "cherry", "apple"]
-        await aiometer.run_on_each(process, items)
+        await aiometer_redis.run_on_each(process, items)
 
         assert output == {"apple", "banana", "cherry"}
 
@@ -31,15 +31,15 @@ class TestRunners:
             await anyio.sleep(0.01)
             return "slow"
 
-        assert await aiometer.run_all([process_fast, process_slow]) == ["fast", "slow"]
-        assert await aiometer.run_all([process_slow, process_fast]) == ["slow", "fast"]
+        assert await aiometer_redis.run_all([process_fast, process_slow]) == ["fast", "slow"]
+        assert await aiometer_redis.run_all([process_slow, process_fast]) == ["slow", "fast"]
 
     async def test_amap(self) -> None:
         async def process(item: str) -> str:
             return item.capitalize()
 
         items = ["apple", "banana", "cherry", "apple"]
-        async with aiometer.amap(process, items) as results:
+        async with aiometer_redis.amap(process, items) as results:
             output = {result async for result in results}
 
         assert output == {"Apple", "Banana", "Cherry"}
@@ -52,7 +52,7 @@ class TestRunners:
             called += 1
 
         items = ["apple", "banana", "cherry", "apple"]
-        async with aiometer.amap(process, items):
+        async with aiometer_redis.amap(process, items):
             pass
 
         # Should have waited for all tasks to complete before exiting.
@@ -70,7 +70,7 @@ class TestRunners:
 
         items = ["apple", "banana", "fail", "apple"]
         with pytest.raises(Failure):
-            async with aiometer.amap(process, items) as results:
+            async with aiometer_redis.amap(process, items) as results:
                 async for result in results:
                     pass  # pragma: nopy38
 
@@ -82,9 +82,9 @@ class TestRunners:
             await anyio.sleep(0.01)
             return "slow"
 
-        assert await aiometer.run_any([process_slow, process_fast]) == "fast"
+        assert await aiometer_redis.run_any([process_slow, process_fast]) == "fast"
 
-    @pytest.mark.parametrize("run", [aiometer.run_all, aiometer.run_any])
+    @pytest.mark.parametrize("run", [aiometer_redis.run_all, aiometer_redis.run_any])
     async def test_disallow_buggy_lambdas(self, run: Callable) -> None:
         items = ["apple", "banana", "cherry", "apple"]
 
@@ -131,19 +131,19 @@ class TestMaxAtOnce:
     @pytest.mark.parametrize("max_at_once", max_at_once_params)
     async def test_run_on_each(self, max_at_once: int) -> None:
         with self.assert_limit(max_at_once) as spy:
-            await aiometer.run_on_each(spy.async_fn, spy.args, max_at_once=max_at_once)
+            await aiometer_redis.run_on_each(spy.async_fn, spy.args, max_at_once=max_at_once)
 
     @pytest.mark.slow
     @pytest.mark.parametrize("max_at_once", max_at_once_params)
     async def test_run_all(self, max_at_once: int) -> None:
         with self.assert_limit(max_at_once) as spy:
-            await aiometer.run_all(spy.async_fns, max_at_once=max_at_once)
+            await aiometer_redis.run_all(spy.async_fns, max_at_once=max_at_once)
 
     @pytest.mark.slow
     @pytest.mark.parametrize("max_at_once", max_at_once_params)
     async def test_amap(self, max_at_once: int) -> None:
         with self.assert_limit(max_at_once) as spy:
-            async with aiometer.amap(
+            async with aiometer_redis.amap(
                 spy.async_fn, spy.args, max_at_once=max_at_once
             ) as results:
                 async for _ in results:
@@ -153,7 +153,7 @@ class TestMaxAtOnce:
     @pytest.mark.parametrize("max_at_once", max_at_once_params)
     async def test_run_any(self, max_at_once: int) -> None:
         with self.assert_limit(max_at_once) as spy:
-            await aiometer.run_any(spy.async_fns, max_at_once=max_at_once)
+            await aiometer_redis.run_any(spy.async_fns, max_at_once=max_at_once)
 
     @pytest.mark.parametrize("max_at_once", (0, -1, -10))
     async def test_max_at_once_must_be_positive(self, max_at_once: int) -> None:
@@ -161,7 +161,7 @@ class TestMaxAtOnce:
             pass  # pragma: no cover
 
         with pytest.raises(ValueError):
-            await aiometer.run_on_each(async_fn, ["test"], max_at_once=max_at_once)
+            await aiometer_redis.run_on_each(async_fn, ["test"], max_at_once=max_at_once)
 
 
 @pytest.mark.anyio
@@ -194,7 +194,7 @@ class TestMaxPerSecond:
     @pytest.mark.parametrize("max_per_second", max_per_second_params)
     async def test_run_on_each(self, max_per_second: float) -> None:
         with self.assert_limit(max_per_second) as spy:
-            await aiometer.run_on_each(
+            await aiometer_redis.run_on_each(
                 spy.task, spy.args, max_per_second=max_per_second
             )
 
@@ -202,13 +202,13 @@ class TestMaxPerSecond:
     @pytest.mark.parametrize("max_per_second", max_per_second_params)
     async def test_run_all(self, max_per_second: float) -> None:
         with self.assert_limit(max_per_second) as spy:
-            await aiometer.run_all(spy.tasks, max_per_second=max_per_second)
+            await aiometer_redis.run_all(spy.tasks, max_per_second=max_per_second)
 
     @pytest.mark.slow
     @pytest.mark.parametrize("max_per_second", max_per_second_params)
     async def test_amap(self, max_per_second: float) -> None:
         with self.assert_limit(max_per_second) as spy:
-            async with aiometer.amap(
+            async with aiometer_redis.amap(
                 spy.task, spy.args, max_per_second=max_per_second
             ) as results:
                 async for _ in results:
@@ -218,4 +218,4 @@ class TestMaxPerSecond:
     @pytest.mark.parametrize("max_per_second", max_per_second_params)
     async def test_run_any(self, max_per_second: float) -> None:
         with self.assert_limit(max_per_second) as spy:
-            await aiometer.run_any(spy.tasks, max_per_second=max_per_second)
+            await aiometer_redis.run_any(spy.tasks, max_per_second=max_per_second)
